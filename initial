@@ -1,0 +1,22 @@
+#include<stdio.h>
+struct Operation
+{
+	int speed[4];//变速
+	int change[4];//变道
+};//操作
+struct Car
+{
+	char type[5];//车辆类型
+	int speed;//车辆初始速度
+	struct Operation operation;//车辆在接下来四个节点想要进行的操作
+	struct Operation command;//系统给车辆的命令
+};//车辆的初始数据
+int main(void)
+{
+	int number;//车辆的数量
+	scanf("%d", &number);
+	int* car;
+	car = malloc(sizeof(struct Car) * number);
+	//读入number个车辆的数据，改变数据
+	//到达测量点，系统分配（目前是针对单个车辆，后面要加入计时功能）
+}
