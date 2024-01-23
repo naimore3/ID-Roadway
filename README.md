@@ -34,4 +34,4 @@
 
 # 示意图
 
-![示意图](/Users/sagechen/Documents/02/ID-Roadway/Attachments/示意图.jpeg)
+![示意图](https://github.com/naimore3/ID-Roadway/blob/main/Attachments/示意图.jpeg)
