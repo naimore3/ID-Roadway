@@ -28,7 +28,7 @@ int main(void)           // 单个车辆分配
     scanf("%d", &number);*/
 
     Car car;
-    car = (Car)malloc(sizeof(Car) * number);
+    car = (Car)malloc(sizeof(struct car) * number); // BUG 内存分配导致的问题，已经修复
 
     // 随机生成车辆速度（速度范围：30-90）
     srand(time(NULL));
@@ -55,7 +55,6 @@ int main(void)           // 单个车辆分配
         printf("该车辆第%d次操作速度变为%d，车道增加%d\n", i + 1,
                car[0].operation.speed[i], car[0].operation.change[i]);
     }
-
     // 每到达一次测量点系统分配道路与速度（但目前只是单一车辆，故直接将车辆想要的操作作为系统分配）
     printf("该车辆的初始速度为%d，初始车道为%d\n", car[0].speed, car[0].road);
     // 先按照车型来分配，轿车行驶速度快，分配到第四、五车道；客车在第三车道；货车在属于重型车，在第二车道；摩托车在第一车道
@@ -96,7 +95,7 @@ int main(void)           // 单个车辆分配
             car[0].speed = car[0].operation.speed[i]; // 将车速设置为驾驶员想要的速度
             if (car[0].speed >= 30 && car[0].speed < 60)
             {
-                if (car[0].road == 3 || car[0].road == 4 || car[0].road == 5)
+                if (car[0].road>=3)
                 {
                     car[0].command.speed[i] = car[0].operation.speed[i]; // 不改变速度
                     car[0].command.change[i] = -1;                       // 改变车道
@@ -109,74 +108,64 @@ int main(void)           // 单个车辆分配
                 {
                     car[0].command.speed[i] = car[0].operation.speed[i]; // 不改变速度
                     car[0].command.change[i] = 1;                        // 改变车道
-                    car[0].road = 3;                                     // 问题在于不知道哪个车道车辆更少
+                    car[0].road = 3;                                     // TODO 从3-5三个车道选车少的
                 }
             }
         }
-        else // 驾驶员有变道意愿
+        else if (car[0].operation.change[i] == 1) // 驾驶员想要向左变道
         {
-            if (car[0].operation.change[i] == 1) // 驾驶员想要向左变道
+            // NOTE 1-2车道车速max=60，3-5车道车速max=90
+            if (car[0].road == 5) // 五车道无法变道
             {
-                if (car[0].road == 5) // 五车道无法变道
-                {
-                    car[0].operation.change[i] = 0; // 无法变道
-                }
-                else
-                {
-                    // NOTE： 为什么要判断>2
-                    if (car[0].road > 2) // 车在二车道即以上
-                    {
-                        car[0].command.speed[i] = -1;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].road += car[0].operation.change[i]; // 车道加一
-                    }
-                    else if (car[0].road == 2) // 车在二车道
-                    {
-                        car[0].command.speed[i] = 90;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].speed = 90;
-                        car[0].road += car[0].operation.change[i];
-                    }
-                    else
-                    {
-                        car[0].command.speed[i] = -1;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].road++;
-                    }
-                }
+                 car[0].operation.change[i] = 0; // 无法变道
+            }
+            else if (car[0].road > 2) // 车在二车道即以上
+            {
+                car[0].command.speed[i] = -1;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].road += car[0].operation.change[i];
+            }
+            else if (car[0].road == 2) // 车在二车道
+            {
+                car[0].command.speed[i] = 90;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].speed = 90;
+                car[0].road += car[0].operation.change[i];
             }
             else
             {
-                if (car[0].road == 1) // 一车道无法变道
-                {
-                    car[0].command.change[i] = 0;
-                }
-                else
-                {
-                    if (car[0].road > 3) // 车在三车道即以上
-                    {
-                        car[0].command.speed[i] = -1;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].road--;
-                    }
-                    else if (car[0].road == 3)
-                    {
-                        car[0].command.speed[i] = 60;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].speed = 60;
-                        car[0].road--;
-                    }
-                    else
-                    {
-                        car[0].command.speed[i] = -1;
-                        car[0].command.change[i] = car[0].operation.change[i];
-                        car[0].road--;
-                    }
-                }
+                car[0].command.speed[i] = -1;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].road++;
+            }
+        }
+        else if (car[0].operation.change[i] == -1) // 驾驶员想要向右变道
+        {
+            if (car[0].road == 1) // 一车道无法变道
+            {
+                 car[0].command.change[i] = 0;
+            }
+            else if(car[0].road > 3) // 车在三车道即以上
+            {
+                car[0].command.speed[i] = -1;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].road--;
+            }
+            else if (car[0].road == 3)
+            {
+                car[0].command.speed[i] = 60;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].speed = 60;
+                car[0].road--;
+            }
+            else
+            {
+                car[0].command.speed[i] = -1;
+                car[0].command.change[i] = car[0].operation.change[i];
+                car[0].road--;
             }
         }
         printf("经过测速点%d后车辆速度为%d，分配的车道为%d\n", i + 1, car[0].speed, car[0].road);
-
         /*car[0].command.speed[i] = car[0].operation.speed[i];
         car[0].command.change[i] = car[0].operation.change[i];
         printf("经过测速点%d后车辆速度为%d，车道为%d\n", i + 1,

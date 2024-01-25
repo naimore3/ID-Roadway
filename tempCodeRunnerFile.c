@@ -1,0 +1,1 @@
+printf("%d\n",car[0].operation.change[0]);
