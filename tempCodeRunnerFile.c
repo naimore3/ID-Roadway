@@ -1,1 +1,2 @@
-printf("%d\n",car[0].operation.change[0]);
+
+                car[0].speed = car[0].command.spe

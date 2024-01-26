@@ -117,7 +117,16 @@ int main(void)           // 单个车辆分配
             // NOTE 1-2车道车速max=60，3-5车道车速max=90
             if (car[0].road == 5) // 五车道无法变道
             {
-                 car[0].operation.change[i] = 0; // 无法变道
+                car[0].command.change[i] = 0;
+                if(car[0].operation.speed[i] < 60)
+                {
+                    car[0].command.speed[i] = 90;
+                }
+                else
+                {
+                    car[0].command.speed[i] = car[0].operation.speed[i];
+                }
+                car[0].speed = car[0].command.speed[i];
             }
             else if (car[0].road > 2) // 车在二车道即以上
             {
@@ -143,7 +152,16 @@ int main(void)           // 单个车辆分配
         {
             if (car[0].road == 1) // 一车道无法变道
             {
-                 car[0].command.change[i] = 0;
+                car[0].command.change[i] = 0;
+                if(car[0].operation.speed[i] > 60)
+                {
+                    car[0].command.speed[i] = 60;
+                }
+                else
+                {
+                    car[0].command.speed[i] = car[0].operation.speed[i];
+                }
+                car[0].speed = car[0].command.speed[i];
             }
             else if(car[0].road > 3) // 车在三车道即以上
             {
