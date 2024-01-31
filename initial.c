@@ -3,33 +3,44 @@
 #include <string.h>
 #include <time.h>
 
-#define number 1
-
+#define car_number 1
+#define dot_number 4
+#define road_length 1000
 typedef struct operation
 {
     int speed[4];  // 变速
     int change[4]; // 变道
 } Operation;       // 操作
-
+typedef struct road // 车道
+{
+    int speed[car_number]; // 车道上的车辆速度
+    int count[5][dot_number]; // 车道上的车辆数量
+} *Road;                     // 车道
 typedef struct car
 {
     char type[12];       // 车辆类型
     int speed;           // 车辆初始速度
     int road;            // 车辆初始的车道
+    double time;         // 车辆经历的时间
     Operation operation; // 车辆在接下来四个节点想要进行的操作
     Operation command;   // 系统给车辆的命令
 } *Car;                  // 车辆的初始数据
+
+
 int main(void)           // 单个车辆分配
 {
+    //NOTE 车道
+    Road road;
+    road = (Road)malloc(sizeof(struct road));
+    memset(road, 0, sizeof(struct road));
     const char *vehicle_types[] = {"sedan", "motorcycle", "van",
                                    "coach"}; // 车辆类型
-    /*int number;//车辆的数量
+    /*int car_number;//车辆的数量
     printf("请输入车辆数量：");
-    scanf("%d", &number);*/
+    scanf("%d", &car_number);*/
 
     Car car;
-    car = (Car)malloc(sizeof(struct car) * number); // BUG 内存分配导致的问题，已经修复
-
+    car = (Car)malloc(sizeof(struct car) * car_number); // BUG 内存分配导致的问题，已经修复
     // 随机生成车辆速度（速度范围：30-90）
     srand(time(NULL));
     int random_speed = rand() % 61 + 30;
@@ -90,6 +101,17 @@ int main(void)           // 单个车辆分配
     // 然后车辆数据开始变化，开始分配
     for (int i = 0; i < 4; i++)
     {
+        //NOTE 判断车辆数量
+        /*
+        对每一辆车都预测其到达下一个测速点的时间，从而判断其在下一个监测点时候，在哪一个&&哪一段车道上
+        */
+        car[0].time+=(road_length/dot_number)/car[0].speed;
+        if (car[0].time<i*10)
+        {
+            road->count[car[0].road][i]++;
+        }
+
+        
         if (car[0].operation.change[i] == 0) // 驾驶员没有变道意愿
         {
             car[0].speed = car[0].operation.speed[i]; // 将车速设置为驾驶员想要的速度
@@ -184,9 +206,6 @@ int main(void)           // 单个车辆分配
             }
         }
         printf("经过测速点%d后车辆速度为%d，分配的车道为%d\n", i + 1, car[0].speed, car[0].road);
-        /*car[0].command.speed[i] = car[0].operation.speed[i];
-        car[0].command.change[i] = car[0].operation.change[i];
-        printf("经过测速点%d后车辆速度为%d，车道为%d\n", i + 1,
-        car[0].command.speed[i], car[0].command.change[i]);*/
+        
     }
 }
