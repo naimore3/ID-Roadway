@@ -14,14 +14,14 @@ typedef struct operation
 typedef struct road // 车道
 {
     int speed[car_number]; // 车道上的车辆速度
-    int count[5][dot_number]; // 车道上的车辆数量
+    int count[6][dot_number+1][dot_number+1]; // 车道上的车辆数量count[车道][第几段车道测速][第几次测速]
 } *Road;                     // 车道
 typedef struct car
 {
     char type[12];       // 车辆类型
     int speed;           // 车辆初始速度
     int road;            // 车辆初始的车道
-    double time;         // 车辆经历的时间
+    double time[dot_number];         // 车辆经历的时间
     Operation operation; // 车辆在接下来四个节点想要进行的操作
     Operation command;   // 系统给车辆的命令
 } *Car;                  // 车辆的初始数据
@@ -54,6 +54,7 @@ int main(void)           // 单个车辆分配
     strncpy(car[0].type, vehicle_types[random_type], 10);
     car[0].type[11] = '\0';
     printf("该车车型：%s\n", car[0].type);
+    
 
     srand(time(NULL));
     // 随机生成车辆想要进行的操作（车道为1-5）
@@ -102,16 +103,12 @@ int main(void)           // 单个车辆分配
     for (int i = 0; i < 4; i++)
     {
         //NOTE 判断车辆数量
+        
         /*
         对每一辆车都预测其到达下一个测速点的时间，从而判断其在下一个监测点时候，在哪一个&&哪一段车道上
         */
-        car[0].time+=(road_length/dot_number)/car[0].speed;
-        if (car[0].time<i*10)
-        {
-            road->count[car[0].road][i]++;
-        }
+        car[0].time[i]=(road_length*1.0/(dot_number+1))/car[0].speed;
 
-        
         if (car[0].operation.change[i] == 0) // 驾驶员没有变道意愿
         {
             car[0].speed = car[0].operation.speed[i]; // 将车速设置为驾驶员想要的速度
@@ -206,6 +203,40 @@ int main(void)           // 单个车辆分配
             }
         }
         printf("经过测速点%d后车辆速度为%d，分配的车道为%d\n", i + 1, car[0].speed, car[0].road);
-        
     }
+    car[0].time[dot_number]=road_length*1.0/(dot_number+1)/car[0].speed;
+    double t=0;
+    for(int i=0;i<=dot_number;i++)
+    {
+        t+=car[0].time[i];
+        printf("到达第%d个测速点的时间为%f\n",i+1,t);
+    }
+    for(int j=10;j<=40;j+=10)
+    {
+        double spend_time=0;
+        for(int i=0;i<=dot_number;i++)
+        {
+            spend_time+=car[0].time[i];
+            if(spend_time>j&&spend_time<j+10)
+            {
+                printf("第%ds检测时在第%d车段\n",j,i);
+                road->count[car[0].road][i][j/10]++;
+                break;
+            }
+        }
+    }
+    for(int i=1;i<=5;i++)
+    {
+        for(int j=1;j<=dot_number;j++)
+        {
+            for(int k=1;k<=4;k++)
+            {
+                printf("第%d车道第%d车段第%d0s检测的车辆数量为%d\n",i,j,k,road->count[i][j][k]);
+            }
+        }
+    }
+
+
+
+    
 }
