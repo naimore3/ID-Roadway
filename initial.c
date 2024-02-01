@@ -26,7 +26,6 @@ typedef struct car
     Operation command;   // 系统给车辆的命令
 } *Car;                  // 车辆的初始数据
 
-
 int main(void)           // 单个车辆分配
 {
     //NOTE 车道
