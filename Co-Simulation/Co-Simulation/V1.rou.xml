@@ -1,0 +1,12 @@
+<routes>
+    <vType id="sedan" accel="3.0" decel="6.0"  length="5"   color="1,0,1"/>
+    <vType id="motorcycle" accel="5.0" decel="6.0"  length="2"   color="1,1,1"/>
+    <vType id="van" accel="2.0" decel="4.0"  length="9"   color="1,1,0"/>
+    <vType id="coach" accel="3.0" decel="4.0"  length="8"   color="1,0,0"/>
+
+    <route id="route0"  edges="E0 E1 E2 E3 E4"/> 
+    
+    <vehicle id="0" type="motorcycle"  depart="0" route="route0" departLane="0"/>
+    
+
+</routes>
