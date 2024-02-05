@@ -26,6 +26,24 @@ typedef struct car
     Operation command;   // 系统给车辆的命令
 } *Car;                  // 车辆的初始数据
 
+//初始化车辆
+void initializeCar(Car car, const char* vehicle_types[], int car_Number)
+{
+    int random_speed = rand() % 61 + 30; // 30 to 90
+    car->speed = random_speed;
+    car->road = rand() % 5 + 1; // 1 to 5
+
+    int random_type = rand() % 4; // 0 to 3
+    strncpy(car->type, vehicle_types[random_type], sizeof(car->type) - 1);
+    car->type[sizeof(car->type) - 1] = '\0'; // Ensure null-termination
+}
+
+//初始化道路
+void initializeRoad(Road road) {
+    memset(road, 0, sizeof(struct road));
+}
+
+
 int main(void)           // 单个车辆分配
 {
     //NOTE 车道
