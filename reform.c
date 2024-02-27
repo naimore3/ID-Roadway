@@ -3,11 +3,13 @@
 #include <string.h>
 #include <time.h>
 
-#define car_number 1
-#define road_length 10000
-#define laneNum 5
-#define totalTime 200
-#define  dotNumber 20
+#define car_number 1 //车辆的数量
+#define road_length 10000 // 道路长度
+#define laneNum 5 // 车道数量
+#define assumeCarSpeed 20
+const int segementLength = 200;
+const int dot_number = road_length / segementLength; // 测速点的数量
+#define dotNumber dot_number
 
 typedef struct operation
 {
@@ -171,9 +173,8 @@ void allocateCommand(Car cars, Road road, int carNumber, int number)
     }
 }
 
-void predictCarPosition(Car car, int carNumber, int dot_number, int segementLength, int elapsedTime, int currentTime)
+void predictCarPosition(Car car, int carNumber, int dot_number, int segementLength, int number, int currentTime,int elapsedTime)
 {
-    int number = currentTime / elapsedTime;
     for (int i = 0; i < carNumber; i++)
     {
         car[i].distance[number] = car[i].speed[number - 1] * elapsedTime + car[i].distance[number - 1];
@@ -190,26 +191,24 @@ void predictCarPosition(Car car, int carNumber, int dot_number, int segementLeng
     }
 }
 
-void countCarsEveryTenSeconds(Car car, int carNumber, Road road)
+void countCars(Car car, int carNumber, Road road,int dot_number)
 {
-    for (int currentTime = 10; currentTime < totalTime; currentTime += 10)
+    int currentTime = 0;
+    initializeRoad(road);
+    for(int i=1;i<=dotNumber;i++)
     {
-        printf("%d\n", dotNumber);
-        int segementLength = road_length / dotNumber;
-        printf("%d\n", segementLength);
-        initializeRoad(road);
-        predictCarPosition(car, carNumber, dotNumber, segementLength, 10, currentTime);
-        allocateCommand(car, road, carNumber, currentTime / 10);
-        printf("当前时间：%d\n", currentTime);
-        for (int i = 0; i < carNumber; i++)
+        currentTime += 10;
+        predictCarPosition(car, carNumber, dot_number, segementLength,i, currentTime,10);
+        allocateCommand(car, road, carNumber, i);
+        for(int j=0;j<carNumber;j++)
         {
-            road->carCounts[car[i].lane[currentTime / 10]][car[i].section[currentTime / 10]]++;
+            road->carCounts[car[j].lane[i]][car[j].section[i]]++;
         }
-        for (int i = 1; i <= laneNum; i++)
+        for(int j=1;j<=laneNum;j++)
         {
-            for (int j = 1; j <= dotNumber; j++)
+            for(int k=1;k<=dot_number;k++)
             {
-                printf("第%d车道第%d车段车辆数量：%d\n", i, j, road->carCounts[i][j]);
+                printf("第%d车道第%d车段车辆数量为%d\n",j,k,road->carCounts[j][k]);
             }
         }
     }
@@ -249,7 +248,7 @@ int main()
     {
         firstAllocate(&car[i]);
     }
-    countCarsEveryTenSeconds(car, car_number, road);
+    countCars(car, car_number, road, dot_number);
     free(road);
     free(car);
 }
