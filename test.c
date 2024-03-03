@@ -20,8 +20,8 @@ typedef struct car
     int type;            // 车辆类型
     int *speed;          // 车辆速度
     int *lane;           // 车辆车道
-    int *section;        // 车辆所在的车段
-    int *distance;       // 车辆所在的距离
+    int predictSection;        // 车辆所在的车段
+    double predictDistance;       // 车辆所在的距离
     Operation operation; // 车辆在接下来n个节点想要进行的操作
     Operation command;   // 系统给车辆的命令,存储要变化的车速，变道
 } * Car;                 // 车辆的初始数据
@@ -33,8 +33,6 @@ void initializeCar(Car car, int car_Number, int laneNum, int dotNum)
     {
         car[i].speed = (int *)malloc(sizeof(int) * (dotNum + 1));
         car[i].lane = (int *)malloc(sizeof(int) * (dotNum + 1));
-        car[i].section = (int *)malloc(sizeof(int) * (dotNum + 1));
-        car[i].distance = (int *)malloc(sizeof(int) * (dotNum + 1));
         car[i].operation.speed = (int *)malloc(sizeof(int) * (dotNum + 1));
         car[i].operation.change = (int *)malloc(sizeof(int) * (dotNum + 1));
         car[i].command.speed = (int *)malloc(sizeof(int) * (dotNum + 1));
@@ -44,7 +42,8 @@ void initializeCar(Car car, int car_Number, int laneNum, int dotNum)
         int random_type = rand() % 4;        // 0 to 3
         car[i].speed[0] = random_speed;
         car[i].lane[0] = rand() % laneNum + 1; // 1 to 5
-        car[i].section[0] = 0;
+        car[i].predictSection = 0;
+        car[i].predictDistance = 0;
         car[i].type = random_type;
     }
 }
@@ -60,20 +59,20 @@ void initializeRoad(Road road, int laneNum, int dotNum)
         free(road); // 先释放已分配的 road
         return;
     }
-    for (int i = 0; i < laneNum; i++)
+    for (int i = 0; i <= laneNum; i++)
     {
         road->carCounts[i] = (int *)malloc(sizeof(int) * (dotNum + 1));
         if (road->carCounts[i] == NULL)
         {
             // 处理内存分配失败的情况
-            for (int j = 0; j < i; j++)
+            for (int j = 0; j <= i; j++)
             {
                 free(road->carCounts[j]);
             }
             free(road->carCounts); // 先释放已分配的 road
             return ;
         }
-        for (int j = 0; j < dotNum; j++)
+        for (int j = 0; j <= dotNum; j++)
         {
             road->carCounts[i][j] = 0;
         }
@@ -91,27 +90,30 @@ void generateOperation(Car car, int operationNumber, int dotNumber)
     }
 }
 
-void firstAllocate(Car car)
+void firstAllocate(Car cars,int carNum)
 {
-    switch (car->type)
+    for(int i=0;i<carNum;i++)
     {
-    case 0: // 轿车
-        car->lane[0] = (car->speed[0] > 30 && car->speed[0] < 60) ? 4 : 5;
-        break;
-    case 1: // 摩托车
-        car->lane[0] = 1;
-        break;
-    case 2: // 货车
-        car->lane[0] = 2;
-        break;
-    case 3: // 客车
-        car->lane[0] = 3;
-        break;
-    default:
-        printf("未知车辆类型\n");
-        break;
+        switch (cars[i].type)
+        {
+        case 0: // 轿车
+            cars[i].lane[0] = (cars[i].speed[0] > 30 && cars[i].speed[0] < 60) ? 4 : 5;
+            break;
+        case 1: // 摩托车
+            cars[i].lane[0] = 1;
+            break;
+        case 2: // 货车
+            cars[i].lane[0] = 2;
+            break;
+        case 3: // 客车
+            cars[i].lane[0] = 3;
+            break;
+        default:
+            printf("未知车辆类型\n");
+            break;
+        }
+        printf("经过测速点0后车辆速度为%d，分配的车道为%d\n", cars[i].speed[0], cars[i].lane[0]);
     }
-    printf("经过测速点0后车辆速度为%d，分配的车道为%d\n", car->speed[0], car->lane[0]);
 }
 
 void allocateCommand(Car cars, Road road, int carNumber, int number)
@@ -120,6 +122,7 @@ void allocateCommand(Car cars, Road road, int carNumber, int number)
     {
         cars[i].command.change[number] = 0;
         cars[i].command.speed[number] = cars[i].operation.speed[number];
+        cars[i].lane[number]=cars[i].lane[number-1];
         if (cars[i].operation.change[number] != 0)
         {
             int newLane = cars[i].lane[number - 1] + cars[i].operation.change[number];
@@ -135,18 +138,50 @@ void allocateCommand(Car cars, Road road, int carNumber, int number)
         }
         if (cars[i].lane[number] > 2 && cars[i].command.speed[number] < 60)
         {
-            cars[i].command.speed[number] = 60;
+            if(cars[i].speed[number-1]>60){
+                cars[i].command.speed[number] = cars[i].speed[number-1];
+            }
+            else{
+                cars[i].command.speed[number] = 60;
+            }
         }
         else if (cars[i].lane[number] <= 2 && cars[i].command.speed[number] > 60)
         {
-            cars[i].command.speed[number] = 60;
+            if(cars[i].speed[number-1]<60){
+                cars[i].command.speed[number] = cars[i].speed[number-1];
+            }
+            else{
+                cars[i].command.speed[number] = 60;
+            }
         }
         cars[i].speed[number] = cars[i].command.speed[number];
-        printf("第%d辆车的原车速为%d，变化后车速为%d，操作为%d\n", i + 1, cars[i].speed[number - 1], cars[i].speed[number], cars[i].command.speed[number]);
-        printf("第%d辆车在第%d个时间段的速度：%d  分配的车道为%d\n", i + 1, number, cars[i].speed[number], cars[i].lane[number]);
+        printf("第%d辆车的原车速为%d，变化后车速为%d，操作为%d\n", i + 1, cars[i].speed[number - 1], cars[i].speed[number], cars[i].command.change[number]);
+        printf("第%d辆车在第%d个测速点的速度：%d  分配的车道为%d\n", i + 1, number, cars[i].speed[number], cars[i].lane[number]);
     }
 }
 
+
+void updateRoadCondition(Road road,Car cars,int carNum,int dotNum,int num)
+{
+    for(int lane=1;lane<=road->lanes;lane++)
+    {
+        for(int section=1;section<=dotNum;section++)
+        {
+            road->carCounts[lane][section]=0;
+        }
+    }
+
+    //根据车辆的预测位置更新道路状况
+    for(int i=0;i<carNum;i++)
+    {
+        int lane=cars[i].lane[num];
+        int section=cars[i].predictSection+1;
+        if(lane>0&&lane<=road->lanes&&section>=0&&section<dotNum)
+        {
+            road->carCounts[lane][section]++;
+        }
+    }
+}
 void freeMemory(Car cars, Road road, int carNumber)
 {
     if (cars != NULL) {
@@ -154,8 +189,6 @@ void freeMemory(Car cars, Road road, int carNumber)
             // 释放 Car 结构体中的动态分配内存
             free(cars[i].speed); cars[i].speed = NULL;
             free(cars[i].lane); cars[i].lane = NULL;
-            free(cars[i].section); cars[i].section = NULL;
-            free(cars[i].distance); cars[i].distance = NULL;
 
             // 检查并释放 Operation 结构体中的动态分配内存
             if (cars[i].operation.speed != NULL) {
@@ -192,10 +225,23 @@ void freeMemory(Car cars, Road road, int carNumber)
     }
 }
 
+void printRoadCondition(Road road, int dotNum)
+{
+    for (int i = 1; i <= road->lanes; i++)
+    {
+        for (int j = 1; j <= dotNum; j++)
+        {
+            printf("%d ", road->carCounts[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+
 int main()
 {
     srand(time(NULL));
-    int car_number = 3;
+    int car_number = 1;
     int lane_number = 5;
     int road_length = 1000;
     int test_length = 200;
@@ -228,10 +274,8 @@ int main()
         generateOperation(&car[i], dot_number, dot_number);
     }
     //第一次分配车道，根据车辆类型和速度
-    for (int i = 0; i < car_number; i++)
-    {
-        firstAllocate(&car[i]);
-    }
-    allocateCommand(car, road, car_number, 1);
+    firstAllocate(car, car_number);
+    updateRoadCondition(road,car,car_number,dot_number,0);
+
     freeMemory(car, road, car_number);
 }
