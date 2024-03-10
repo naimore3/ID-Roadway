@@ -1,1 +1,1 @@
-i
+resetCarCountsPerSegment(road);
