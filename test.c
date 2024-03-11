@@ -18,7 +18,7 @@ typedef struct road // 车道
 
 typedef struct section
 {
-    double length;     //车段长度
+    double length;     //车段长度z
     int laneCount;     //车道数量
     double speedLimit; //车道限速
     int *carCounts;    //每个车道上的车辆数量
