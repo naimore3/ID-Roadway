@@ -39,3 +39,16 @@
 # 项目日志：
 /*加入计时功能，在不同时间点测量不同段道路的车辆情况*/
 ![时间演示](https://github.com/naimore3/ID-Roadway/blob/main/Attachments/%E6%97%B6%E9%97%B4%E6%BC%94%E7%A4%BA.jpg)
+
+
+
+## Update
+
+重构了一下，主要变化有
+
+1. 更新了道路和车辆存储的方式，车辆改为链表存储，便于遍历和更新
+2. 加入模拟操作的函数**adjustCarSpeed**和**attemptLaneChange**，采用随机去模拟变道和速度期望
+3. 完成了车辆统计操作
+
+目前逻辑为：车辆状态随时间dt更新，若发现车辆到达了下一个监测点，则对车道情况进行统计，再根据统计的情况采取操作（这里为**assignOperations**，具体判断待修改）
+

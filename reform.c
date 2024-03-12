@@ -34,10 +34,9 @@ typedef struct Road
     int lanes;     //车道数量
     double length; //车段长度
     double checkpointInterval;
-    CarNode *carListHead; //车辆列表
-    int *carCountPerLane;
-    int checkpointCount;
-    int **carCountsPerSegment;
+    CarNode *carListHead;            //车辆列表
+    int checkpointCount;             //检查点数量
+    int **carCountsPerSegment;       //每个车段每个车道的车辆数
     double **avgSpeedPerLaneSegment; // 每个车段每个车道的平均速度
 } Road;
 
@@ -48,12 +47,14 @@ void initializeRoad(Road *road, double length, int lanes, double checkpointInter
     road->checkpointInterval = checkpointInterval;
     road->carListHead = NULL;
     road->checkpointCount = (int)(length / checkpointInterval);
+    // 内存分配
     road->carCountsPerSegment = (int **)malloc(road->lanes * sizeof(int *));
     for (int i = 0; i < road->lanes; i++)
     {
         road->carCountsPerSegment[i] = (int *)malloc(road->checkpointCount * sizeof(int));
         memset(road->carCountsPerSegment[i], 0, road->checkpointCount * sizeof(int));
     }
+    // 初始化每个车段每个车道的平均速度统计数组，内存分配
     road->avgSpeedPerLaneSegment = (double **)malloc(road->lanes * sizeof(double *));
     for (int j = 0; j < road->lanes; j++)
     {
@@ -62,6 +63,16 @@ void initializeRoad(Road *road, double length, int lanes, double checkpointInter
     }
 }
 
+/**
+ * Initializes a car with the given parameters.
+ *
+ * @param car The car object to be initialized.
+ * @param id The ID of the car.
+ * @param type The type of the car.
+ * @param currentSpeed The current speed of the car.
+ * @param currentLane The current lane of the car.
+ * @param position The position of the car.
+ */
 void initializeCar(Car *car, int id, int type, int currentSpeed, int currentLane, double position)
 {
     car->id = id;
@@ -72,6 +83,12 @@ void initializeCar(Car *car, int id, int type, int currentSpeed, int currentLane
     car->nextCheckPoint = 0;
 }
 
+/**
+ * Adds a new car to the road's car list.
+ *
+ * @param road The road to add the car to.
+ * @param newCar The car to be added.
+ */
 void addCar(Road *road, Car newCar)
 {
     CarNode *newNode = (CarNode *)malloc(sizeof(CarNode));
@@ -99,7 +116,8 @@ void updateSegmentLaneInfo(Road *road)
     while (current)
     {
         int segmentIndex = (int)(current->car.position / road->checkpointInterval);
-        if(segmentIndex >= road->checkpointCount){
+        if (segmentIndex >= road->checkpointCount)
+        {
             segmentIndex = road->checkpointCount - 1;
         }
         int laneIndex = current->car.currentLane;
@@ -131,19 +149,14 @@ void adjustCarSpeed(Car *car, const Road *road)
 
     // 假设有一定几率根据当前情况加速或减速
     if (randValue < 40)
-    {
-        // 基于某些条件加速，比如当前速度低于速度限制
-        if (car->currentSpeed < 100)
-        {                                                // 假设90是某个理想速度
-            car->targetSpeed = car->currentSpeed * 1.05; // 加速5%
-        }
+    {                                                // 假设100是某个理想速度
+        car->targetSpeed = car->currentSpeed * 1.05; // 加速5%
     }
     else if (randValue < 80)
     {
-        // 基于某些条件减速，比如接近前车
         car->targetSpeed = car->currentSpeed * 0.95; // 减速5%
     }
-    else
+    else if (randValue < 100)
     {
         car->targetSpeed = car->currentSpeed; // 保持当前速度
     }
@@ -156,6 +169,7 @@ void adjustCarSpeed(Car *car, const Road *road)
     {
         car->targetSpeed = 60; // 假设20是最小速度
     }
+    //printf("Car %d: current speed: %d, target speed: %d\n", car->id, car->currentSpeed, car->targetSpeed);
 }
 
 void attemptLaneChange(Car *car, const Road *road)
@@ -168,12 +182,12 @@ void attemptLaneChange(Car *car, const Road *road)
         // 假定驾驶者倾向于向左变道（如果可能），以超车
         if (car->currentLane > 1)
         { // 确保不是在最左侧车道
-            printf("Car %d decides to change from lane %d to lane %d\n", car->id, car->currentLane + 1, car->currentLane - 1 + 1);
+            // printf("Car %d decides to change from lane %d to lane %d\n", car->id, car->currentLane + 1, car->currentLane - 1 + 1);
             car->targetLane = car->currentLane - 1; // 向左变道
         }
         else if (car->currentLane < road->lanes)
         { // 如果在最左侧车道，且有右侧车道，则考虑向右变道
-            printf("Car %d decides to change from lane %d to lane %d\n", car->id, car->currentLane + 1, car->currentLane + 1 + 1);
+            // printf("Car %d decides to change from lane %d to lane %d\n", car->id, car->currentLane + 1, car->currentLane + 1 + 1);
             car->targetLane = car->currentLane + 1; // 向右变道
         }
     }
@@ -190,6 +204,7 @@ void assignOperations(Road *road, Car *car)
     int segmentIndex = (int)(car->position / road->checkpointInterval);
     updateSegmentLaneInfo(road); // 更新车道信息
     //考虑变道情况
+    // printf("Car %d: current speed: %d, current lane: %d, target speed: %d, target lane: %d\n", car->id, car->currentSpeed, car->currentLane + 1, car->targetSpeed, car->targetLane + 1);
     if (car->targetLane != car->currentLane)
     {
         if (road->carCountsPerSegment[car->targetLane][segmentIndex] < road->carCountsPerSegment[car->currentLane][segmentIndex]) //目标车道车辆数小于当前车道
@@ -198,7 +213,6 @@ void assignOperations(Road *road, Car *car)
         }
     }
     car->currentSpeed = car->targetSpeed;
-    printf("Car %d: current speed: %d, current lane: %d, target speed: %d, target lane: %d\n", car->id, car->currentSpeed, car->currentLane + 1, car->targetSpeed, car->targetLane + 1);
 }
 
 void printCarCountsPerSegment(const Road *road)
@@ -215,17 +229,6 @@ void printCarCountsPerSegment(const Road *road)
     }
 }
 
-void freeCarList(CarNode *head)
-{
-    CarNode *current = head;
-    while (current != NULL)
-    {
-        CarNode *next = current->next;
-        free(current); // 释放当前节点
-        current = next;
-    }
-}
-
 void updateCar(Road *road, double dt)
 {
     CarNode *current = road->carListHead;
@@ -235,14 +238,14 @@ void updateCar(Road *road, double dt)
         double newPosition = current->car.position + current->car.currentSpeed * dt;
         int currentCheckpointIndex = (int)(current->car.position / road->checkpointInterval);
         int newCheckpointIndex = (int)(newPosition / road->checkpointInterval);
+        // printf("Car %d: current speed: %d, current lane: %d\n", current->car.id, current->car.currentSpeed, current->car.currentLane + 1);
         if (newCheckpointIndex > currentCheckpointIndex)
         {
-            printf("Car %d passed checkpoint %d\n", current->car.id, newCheckpointIndex);
+            // printf("Car %d passed checkpoint %d\n", current->car.id, newCheckpointIndex);
             assignOperations(road, &current->car);
         }
         if (newCheckpointIndex >= road->checkpointCount)
         {
-            printf("Car %d reached the end of the road\n", current->car.id);
             current->car.position = road->length;
             current = current->next;
             continue;
@@ -295,9 +298,9 @@ int main()
 {
     srand(time(NULL));
     Road road;
-    initializeRoad(&road, 1500, 5, 100);
+    initializeRoad(&road, 15000, 5, 1000);
 
-    int carCount = 10;
+    int carCount = 500;
     for (int i = 0; i < carCount; i++)
     {
         Car newCar = {
@@ -310,12 +313,12 @@ int main()
         addCar(&road, newCar);
     }
     double dt = 1.0;
-    double simulationTime = 20;
+    double simulationTime = 60;
     for (double currentTime = 0; currentTime < simulationTime; currentTime += dt)
     {
         updateCar(&road, dt);
+        printCarCountsPerSegment(&road);
     }
-    printCarCountsPerSegment(&road);
     freeRoad(&road);
     return 0;
 }
